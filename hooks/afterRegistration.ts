@@ -32,6 +32,7 @@ export function afterRegistration({ Vue, config, store, isServer }) {
       "script",
       "https://connect.facebook.net/en_US/fbevents.js",
       () => {
+        fbq('dataProcessingOptions', ['LDU'], 0, 0);
         fbq("init", config.facebookPixel.id);
         fbq("track", "PageView");
 
