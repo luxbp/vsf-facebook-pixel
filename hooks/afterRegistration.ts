@@ -2,13 +2,16 @@ import rootStore from "@vue-storefront/core/store";
 import evPurchase from "../events/Purchase";
 import evSearch from "../events/Search";
 import evAddToWishlist from "../events/AddToWishlist";
+import evViewContent from "../events/ViewContent";
+import * as productTypes from '@vue-storefront/core/modules/catalog/store/product/mutation-types';
+import {debounce} from '../helpers/debounce';
 
 declare const fbq;
 
-const facebookPixelSnippet = function(f, b, e, v, callback) {
+const facebookPixelSnippet = function (f, b, e, v, callback) {
   let n, t, s;
   if (f.fbq) return;
-  n = f.fbq = function() {
+  n = f.fbq = function () {
     n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
   };
   if (!f._fbq) f._fbq = n;
@@ -24,7 +27,7 @@ const facebookPixelSnippet = function(f, b, e, v, callback) {
   t.onload = callback;
 };
 
-export function afterRegistration({ Vue, config, store, isServer }) {
+export function afterRegistration({Vue, config, store, isServer}) {
   if (!isServer && config.facebookPixel && config.facebookPixel.id) {
     facebookPixelSnippet(
       window,
@@ -43,5 +46,17 @@ export function afterRegistration({ Vue, config, store, isServer }) {
         evAddToWishlist(fbq, currency);
       }
     );
+
+    const currency = rootStore.state.storeView.i18n.currencyCode;
+    const view = debounce(() => {
+      evViewContent(fbq, rootStore.state.product.current, currency);
+    }, 500);
+
+    store.subscribe((mutation, state) => {
+      const type = mutation.type;
+      if (type.endsWith('recently-viewed/recently-viewed/ADD') || type.endsWith(productTypes.CATALOG_SET_PRODUCT_ORIGINAL)) {
+        view();
+      }
+    })
   }
 }
